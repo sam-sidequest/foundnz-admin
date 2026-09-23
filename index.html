@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin — Found NZ</title>
+<meta name="robots" content="noindex, nofollow" />
+<style>
+  :root {
+    --beige: #F9F7F4;
+    --cream: #F5EDD8;
+    --sage: #7A8A6A;
+    --sage-dark: #5F6E52;
+    --gold: #C4A030;
+    --charcoal: #1C1C1A;
+    --forest: #0D2B1F;
+    --border: #E2DED4;
+    --error: #B3432B;
+    --ok: #4B7E65;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--beige);
+    color: var(--charcoal);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 20px 80px; }
+  header { margin-bottom: 24px; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .brand { font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--sage-dark); }
+  h1 { font-size: 24px; font-weight: 700; margin: 4px 0 0; letter-spacing: -0.3px; }
+  .signout { font-size: 13px; color: var(--sage-dark); background: none; border: none; cursor: pointer; text-decoration: underline; padding: 0; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .tab {
+    padding: 10px 16px; font-size: 14px; font-weight: 600; color: #8A8B84;
+    background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tab.active { color: var(--forest); border-bottom-color: var(--forest); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card {
+    background: #fff; border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .card-title { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+  .card-meta { font-size: 13px; color: #6B6C65; margin: 0 0 10px; }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .tag {
+    font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+    background: var(--cream); color: var(--sage-dark);
+  }
+  .card-actions { display: flex; gap: 10px; }
+  button.approve, button.reject, button.toggle-on, button.toggle-off {
+    padding: 8px 16px; border-radius: 999px; font-size: 13.5px; font-weight: 600;
+    border: none; cursor: pointer;
+  }
+  button.approve, button.toggle-on { background: var(--forest); color: var(--cream); }
+  button.reject { background: #fff; color: var(--error); border: 1px solid var(--error); }
+  button.toggle-off { background: #fff; color: var(--error); border: 1px solid var(--error); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  a.source-link { color: var(--sage-dark); }
+
+  table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  th, td { text-align: left; padding: 12px 14px; font-size: 13.5px; border-bottom: 1px solid var(--border); }
+  th { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; color: #8A8B84; background: var(--cream); }
+  tr:last-child td { border-bottom: none; }
+  .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .status-dot.ok { background: var(--ok); }
+  .status-dot.err { background: var(--error); }
+  .status-dot.off { background: #C7C8C1; }
+  .err-text { color: var(--error); font-size: 12px; }
+
+  .empty { color: #8A8B84; font-size: 14px; padding: 24px; text-align: center; }
+  .loading { color: #8A8B84; font-size: 14px; padding: 24px; text-align: center; }
+
+  .gate { max-width: 380px; margin: 80px auto; text-align: center; }
+  .gate input {
+    width: 100%; padding: 11px 13px; border: 1px solid var(--border); border-radius: 10px;
+    font-size: 15px; margin: 16px 0; background: var(--beige);
+  }
+  .gate button {
+    width: 100%; padding: 12px; background: var(--forest); color: var(--cream);
+    border: none; border-radius: 999px; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .gate .err-text { margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<div class="wrap" id="gateWrap">
+  <div class="gate">
+    <div class="brand">Found NZ</div>
+    <h1>Admin</h1>
+    <input type="password" id="adminKeyInput" placeholder="Admin key" autocomplete="off" />
+    <button id="signInBtn">Sign in</button>
+    <div class="err-text" id="gateError" style="display:none"></div>
+  </div>
+</div>
+
+<div class="wrap" id="appWrap" style="display:none">
+  <header>
+    <div>
+      <div class="brand">Found NZ</div>
+      <h1>Admin</h1>
+    </div>
+    <button class="signout" id="signOutBtn">Sign out</button>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-panel="pending">Pending events</button>
+    <button class="tab" data-panel="sources">Sources</button>
+  </div>
+
+  <div class="panel active" id="panel-pending">
+    <div id="pendingList" class="loading">Loading…</div>
+  </div>
+
+  <div class="panel" id="panel-sources">
+    <div id="sourcesList" class="loading">Loading…</div>
+  </div>
+</div>
+
+<script type="module">
+  const FUNCTION_BASE = 'https://wwuoaohdkygpoinackvj.supabase.co/functions/v1/admin-api';
+  // Public anon key — safe to embed client-side (same key shipped inside the
+  // app bundle). This is only Supabase's platform JWT gate; the real
+  // authorization is the x-admin-key header checked inside admin-api itself.
+  const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3dW9hb2hka3lncG9pbmFja3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMTIxNDAsImV4cCI6MjA5MzU4ODE0MH0.fStIQPym1WmrHxNmb8gtZtQaE12eWt-8b1Q7fw0smqg';
+  const STORAGE_KEY = 'foundnz_admin_key';
+
+  const gateWrap = document.getElementById('gateWrap');
+  const appWrap = document.getElementById('appWrap');
+  const adminKeyInput = document.getElementById('adminKeyInput');
+  const gateError = document.getElementById('gateError');
+
+  async function api(path, options = {}) {
+    const adminKey = sessionStorage.getItem(STORAGE_KEY);
+    const res = await fetch(`${FUNCTION_BASE}${path}`, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${ANON_KEY}`,
+        'x-admin-key': adminKey,
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+    });
+    if (res.status === 401) {
+      sessionStorage.removeItem(STORAGE_KEY);
+      showGate('That key was rejected.');
+      throw new Error('Unauthorized');
+    }
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+    return body;
+  }
+
+  function showGate(message) {
+    gateWrap.style.display = 'block';
+    appWrap.style.display = 'none';
+    if (message) {
+      gateError.textContent = message;
+      gateError.style.display = 'block';
+    }
+  }
+
+  function showApp() {
+    gateWrap.style.display = 'none';
+    appWrap.style.display = 'block';
+    loadPending();
+    loadSources();
+  }
+
+  document.getElementById('signInBtn').addEventListener('click', async () => {
+    const key = adminKeyInput.value.trim();
+    if (!key) return;
+    sessionStorage.setItem(STORAGE_KEY, key);
+    try {
+      await api('/sources');
+      showApp();
+    } catch (e) {
+      showGate('That key was rejected.');
+    }
+  });
+  adminKeyInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('signInBtn').click();
+  });
+
+  document.getElementById('signOutBtn').addEventListener('click', () => {
+    sessionStorage.removeItem(STORAGE_KEY);
+    showGate();
+  });
+
+  document.querySelectorAll('.tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(`panel-${tab.dataset.panel}`).classList.add('active');
+    });
+  });
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? '';
+    return div.innerHTML;
+  }
+
+  function formatDate(iso) {
+    if (!iso) return 'No upcoming occurrence';
+    return new Date(iso).toLocaleString('en-NZ', { dateStyle: 'medium', timeStyle: 'short' });
+  }
+
+  async function loadPending() {
+    const listEl = document.getElementById('pendingList');
+    listEl.className = 'loading';
+    listEl.textContent = 'Loading…';
+    try {
+      const { pending } = await api('/pending');
+      if (pending.length === 0) {
+        listEl.className = 'empty';
+        listEl.textContent = 'Nothing waiting for review.';
+        return;
+      }
+      listEl.className = '';
+      listEl.innerHTML = pending.map((e) => `
+        <div class="card" data-id="${e.event_id}">
+          <p class="card-title">${escapeHtml(e.title)}</p>
+          <p class="card-meta">
+            ${escapeHtml(e.venue_name || 'No venue')} · ${escapeHtml([e.suburb, e.region].filter(Boolean).join(', ') || 'No location')}
+            <br />${formatDate(e.next_occurrence_at)} · via ${escapeHtml(e.source_name || 'unknown source')}
+            ${e.price_label ? ` · ${escapeHtml(e.price_label)}` : ''}
+          </p>
+          <div class="tag-row">
+            ${(e.category || []).map((c) => `<span class="tag">${escapeHtml(c)}</span>`).join('')}
+            ${(e.moods || []).map((m) => `<span class="tag">${escapeHtml(m)}</span>`).join('')}
+          </div>
+          ${e.source_url ? `<p class="card-meta"><a class="source-link" href="${escapeHtml(e.source_url)}" target="_blank" rel="noopener">View source →</a></p>` : ''}
+          <div class="card-actions">
+            <button class="approve">Approve</button>
+            <button class="reject">Reject</button>
+          </div>
+        </div>
+      `).join('');
+
+      listEl.querySelectorAll('.card').forEach((card) => {
+        const id = card.dataset.id;
+        card.querySelector('.approve').addEventListener('click', (e) => act(id, 'approve', e.target, card));
+        card.querySelector('.reject').addEventListener('click', (e) => act(id, 'reject', e.target, card));
+      });
+    } catch (e) {
+      listEl.className = 'empty';
+      listEl.textContent = `Couldn't load pending events: ${e.message}`;
+    }
+  }
+
+  async function act(id, action, btn, card) {
+    card.querySelectorAll('button').forEach((b) => (b.disabled = true));
+    try {
+      await api(`/events/${id}/${action}`, { method: 'POST' });
+      card.remove();
+    } catch (e) {
+      alert(`Failed: ${e.message}`);
+      card.querySelectorAll('button').forEach((b) => (b.disabled = false));
+    }
+  }
+
+  async function loadSources() {
+    const listEl = document.getElementById('sourcesList');
+    listEl.className = 'loading';
+    listEl.textContent = 'Loading…';
+    try {
+      const { sources } = await api('/sources');
+      listEl.className = '';
+      listEl.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Source</th><th>Type</th><th>Trust</th><th>Status</th><th>Last success</th><th>Failures</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sources.map((s) => {
+              const dot = s.consecutive_failures > 0 ? 'err' : s.enabled ? 'ok' : 'off';
+              return `
+                <tr data-id="${s.id}">
+                  <td>${escapeHtml(s.name)}</td>
+                  <td>${escapeHtml(s.adapter_type)}</td>
+                  <td>${s.trust_level}</td>
+                  <td><span class="status-dot ${dot}"></span>${s.enabled ? 'Enabled' : 'Disabled'}${!s.terms_reviewed ? ' (terms not reviewed)' : ''}</td>
+                  <td>${s.last_success_at ? formatDate(s.last_success_at) : '—'}${s.last_error ? `<br><span class="err-text">${escapeHtml(s.last_error.slice(0, 80))}</span>` : ''}</td>
+                  <td>${s.consecutive_failures}</td>
+                  <td>
+                    <button class="${s.enabled ? 'toggle-off' : 'toggle-on'}" ${!s.enabled && !s.terms_reviewed ? 'disabled title="terms not reviewed"' : ''}>
+                      ${s.enabled ? 'Disable' : 'Enable'}
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+
+      listEl.querySelectorAll('tr[data-id]').forEach((row) => {
+        const id = row.dataset.id;
+        const btn = row.querySelector('button');
+        if (!btn) return;
+        btn.addEventListener('click', async () => {
+          const enabling = btn.classList.contains('toggle-on');
+          btn.disabled = true;
+          try {
+            await api(`/sources/${id}/toggle`, { method: 'POST', body: JSON.stringify({ enabled: enabling }) });
+            loadSources();
+          } catch (e) {
+            alert(`Failed: ${e.message}`);
+            btn.disabled = false;
+          }
+        });
+      });
+    } catch (e) {
+      listEl.className = 'empty';
+      listEl.textContent = `Couldn't load sources: ${e.message}`;
+    }
+  }
+
+  if (sessionStorage.getItem(STORAGE_KEY)) {
+    api('/sources').then(showApp).catch(() => showGate());
+  }
+</script>
+</body>
+</html>
